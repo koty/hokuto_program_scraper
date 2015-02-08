@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, Response, request
 from dateutil.parser import parse
 from pyquery import PyQuery as pq
 
@@ -55,9 +55,26 @@ def get_program():
         program_list = _parse_program('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, '小ホール')
     except Exception as e:
         print(e)
-    response = jsonify({'results': program_list})
-    response.status_code = 200
-    return response
+        
+    data ={'results': program_list}
+    callback = request.args.get("callback")
+    if callback:
+        return jsonp(data, callback)
+    return jsonp(data)
+
+
+def jsonp(data, callback="function"):
+    '''
+    http://d.hatena.ne.jp/mizchi/20110124/1295883476
+    :param data: 
+    :param callback: 
+    :return:
+    '''
+    return Response(
+        "%s(%s);" %(callback, jsonify.dumps(data)),
+        mimetype="text/javascript"
+    )
+
 
 if __name__ == '__main__':
     app.run()
