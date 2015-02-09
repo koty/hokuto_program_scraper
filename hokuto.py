@@ -60,7 +60,7 @@ def get_program():
     callback = request.args.get("callback")
     if callback:
         return jsonp(data, callback)
-    return jsonp(data)
+    return jsonify(data)
 
 
 def jsonp(data, callback="function"):
@@ -71,7 +71,7 @@ def jsonp(data, callback="function"):
     :return:
     '''
     return Response(
-        "%s(%s);" %(callback, jsonify.dumps(data)),
+        "%s(%s);" %(callback, jsonify(data)),
         mimetype="text/javascript"
     )
 
