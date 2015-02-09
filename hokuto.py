@@ -1,3 +1,4 @@
+import json
 from flask import Flask, jsonify, Response, request
 from dateutil.parser import parse
 from pyquery import PyQuery as pq
@@ -43,6 +44,7 @@ def _parse_program(url, program_list, room_name):
         )
     return program_list
 
+
 @app.route('/hokuto.json')
 def get_program():
     try:
@@ -55,8 +57,8 @@ def get_program():
         program_list = _parse_program('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, '小ホール')
     except Exception as e:
         print(e)
-        
-    data ={'results': program_list}
+
+    data = {'results': program_list}
     callback = request.args.get("callback")
     if callback:
         return jsonp(data, callback)
@@ -70,10 +72,8 @@ def jsonp(data, callback="function"):
     :param callback: 
     :return:
     '''
-    return Response(
-        "%s(%s);" %(callback, jsonify(data)),
-        mimetype="text/javascript"
-    )
+    return Response("%s(%s);" % (callback, json.dumps(data))
+                    , mimetype="text/javascript")
 
 
 if __name__ == '__main__':
