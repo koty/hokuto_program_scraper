@@ -1,4 +1,6 @@
+import datetime
 import json
+import unicodedata
 from flask import Flask, jsonify, Response, request
 from dateutil.parser import parse
 from pyquery import PyQuery as pq
@@ -16,7 +18,7 @@ def _parse_program_chikuma(program_list):
     prog_by_months = d(u'table :contains("催しもの名・会場")')
     if not prog_by_months:
         return program_list
-    for prog in prog_by_months:
+    for i, prog in enumerate(prog_by_months):
         table = prog.getparent().getparent().getparent()
         row_span = 0
         for tr in table.getchildren():
@@ -24,13 +26,14 @@ def _parse_program_chikuma(program_list):
                 continue
             if tr.getchildren()[1].attrib.get('rowspan'):
                 row_span = int(tr.getchildren()[1].attrib.get('rowspan'))
-            date = tr.getchildren()[1].getchildren()[0].text
             if row_span > 0 and not tr.getchildren()[1].attrib.get('rowspan'):
                 offset = 2
+                date = program_list[-1]['date']
             else:
+                date = _get_chikuma_date(d, tr.getchildren()[1].getchildren()[0].text, i).strftime("%Y-%m-%d")
                 offset = 0
             row_span -= 1
-            time_from = tr.getchildren()[4 - offset].getchildren()[0].text
+            time_from = tr.getchildren()[4 - offset].getchildren()[0].text.replace(u'：', ':')
             time_to = ''
             subject = tr.getchildren()[3 - offset].getchildren()[0].text
             room_name = u'更植文化会館' \
@@ -57,6 +60,25 @@ def _get_hall_name_image_tag(td):
     font = fonts[0]
     imgs = [tag for tag in font.getchildren() if tag.tag == 'img']
     return imgs[0]
+
+
+def _get_chikuma_date(d, day_text, i):
+    """
+    表示されている予定の年月を求めて、dateオブジェクトを返す。
+    :param d:
+    :param day_text:
+    :param i:
+    :return:
+    """
+    # 〜と～は見た目同じだけど違う文字らしい
+    day_text = day_text.replace('日', '').replace('〜', '').replace('～', '')
+    pdf_anchors = [a for a in d('a') if a.attrib.get('href') and a.attrib['href'].endswith('o.pdf')]
+    # 27-5-6o.pdf
+    ymd_list = pdf_anchors[0].attrib['href'].replace('o.pdf', '').split('-')
+    year  = int(ymd_list[0]) + 1988
+    month = int(ymd_list[1]) + i
+    day = int(unicodedata.normalize('NFKC', day_text))
+    return datetime.datetime(year, month, day)
 
 
 def _parse_program_hokuto(url, program_list, room_name):
