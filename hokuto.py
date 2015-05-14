@@ -13,6 +13,72 @@ def hello_world():
     return 'Hello World!'
 
 
+def _parse_program_mesena(program_list, url):
+    d = pq(url)
+    year_month_text = unicodedata.normalize('NFKC', d('#schedule h3')[0].text)\
+        .replace(' ', '').replace('年', '').replace('月', '')
+    year = int(year_month_text[0:4])
+    month = int(year_month_text[4:])
+    trs = d('#schedule tr')
+    if not trs:
+        return program_list
+
+    row_span = 0
+    for i, tr in enumerate(trs):
+        if i == 0:  # ヘッダを飛ばす
+            continue
+        if tr.getchildren()[0].attrib.get('rowspan') or len(tr.getchildren()) == 3:
+            row_span = int(tr.getchildren()[0].attrib.get('rowspan', 1))
+            if len(tr.getchildren()) == 3:
+                date = datetime.datetime(year, month, int(tr.getchildren()[0].getchildren()[0].text)) \
+                    .strftime("%Y-%m-%d")
+                program_list.append(
+                    {
+                        'date': date,
+                        'time_from': '',
+                        'time_to': '',
+                        'subject': tr.getchildren()[2].text,
+                        'url': url,
+                        'room_name': 'メセナホール',
+                    }
+                )
+                row_span -= 1
+                continue
+
+        if row_span > 0 and not tr.getchildren()[0].attrib.get('rowspan'):
+            off_set = 2
+            date = program_list[-1]['date']
+        else:
+            off_set = 0
+            try:
+                date = datetime.datetime(year, month, int(tr.getchildren()[0].getchildren()[0].text))\
+                    .strftime("%Y-%m-%d")
+            except ValueError:
+                date = str(year) + '-' + str(month).zfill(2) + '-??'
+        if off_set > 0 and len(tr.getchildren()) == 1:
+            # rowspanされた下部の行は面倒なので処理しない
+            row_span = 0
+            continue
+        row_span -= 1
+        time_from = tr.getchildren()[4 - off_set].text.replace(u'：', ':')
+        time_to = ''
+        subject = tr.getchildren()[3 - off_set].text
+        if not subject:
+            subject = tr.getchildren()[3 - off_set].getchildren()[0].text
+        room_name = u'メセナホール' + tr.getchildren()[2 - off_set].text
+        program_list.append(
+            {
+                'date': date,
+                'time_from': time_from,
+                'time_to': time_to,
+                'subject': subject,
+                'url': url,
+                'room_name': room_name,
+            }
+        )
+    return program_list
+
+
 def _parse_program_chikuma(program_list):
     d = pq('http://www.chikuma-bunka.jp/moyoshi.html')
     prog_by_months = d(u'table :contains("催しもの名・会場")')
@@ -115,6 +181,25 @@ def _parse_program_hokuto(url, program_list, room_name):
     return program_list
 
 
+@app.route('/mesena.json')
+def get_program_mesena():
+    program_list = []
+    try:
+        program_list = _parse_program_mesena(program_list,
+                                             'http://www.culture-suzaka.or.jp/mesena/schedule/index.html')
+        program_list = _parse_program_mesena(program_list,
+                                             'http://www.culture-suzaka.or.jp/mesena/schedule/next_month.html')
+    except Exception as e:
+        print(e)
+        raise
+
+    data = {'results': program_list}
+    callback = request.args.get("callback")
+    if callback:
+        return jsonp(data, callback)
+    return jsonify(data)
+
+
 @app.route('/chikuma.json')
 def get_program_chikuma():
     program_list = []
@@ -142,6 +227,10 @@ def get_program_hokuto():
         program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/', program_list, '小ホール')
         program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, '小ホール')
         program_list = _parse_program_chikuma(program_list)
+        program_list = _parse_program_mesena(program_list,
+                                             'http://www.culture-suzaka.or.jp/mesena/schedule/index.html')
+        program_list = _parse_program_mesena(program_list,
+                                             'http://www.culture-suzaka.or.jp/mesena/schedule/next_month.html')
     except Exception as e:
         print(e)
 
