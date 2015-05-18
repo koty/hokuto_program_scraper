@@ -220,12 +220,12 @@ def get_program_chikuma():
 def get_program_hokuto():
     program_list = []
     try:
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/', program_list, '大ホール')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/?page=2', program_list, '大ホール')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/', program_list, '中ホール')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/?page=2', program_list, '中ホール')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/', program_list, '小ホール')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, '小ホール')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/', program_list, 'ホクト文化ホール 大')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/?page=2', program_list, 'ホクト文化ホール 大')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/', program_list, 'ホクト文化ホール 中')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/?page=2', program_list, 'ホクト文化ホール 中')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/', program_list, 'ホクト文化ホール 小')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, 'ホクト文化ホール 小')
         program_list = _parse_program_chikuma(program_list)
         program_list = _parse_program_mesena(program_list,
                                              'http://www.culture-suzaka.or.jp/mesena/schedule/index.html')
