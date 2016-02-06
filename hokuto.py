@@ -226,11 +226,11 @@ def get_program_hokuto():
         program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/?page=2', program_list, 'ホクト文化ホール 中')
         program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/', program_list, 'ホクト文化ホール 小')
         program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, 'ホクト文化ホール 小')
-        program_list = _parse_program_chikuma(program_list)
         program_list = _parse_program_mesena(program_list,
                                              'http://www.culture-suzaka.or.jp/mesena/schedule/index.html')
         program_list = _parse_program_mesena(program_list,
                                              'http://www.culture-suzaka.or.jp/mesena/schedule/next_month.html')
+        program_list = _parse_program_chikuma(program_list)
     except Exception as e:
         print(e)
 
