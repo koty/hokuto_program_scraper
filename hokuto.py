@@ -24,18 +24,29 @@ def _nagano_art(program_list):
         if sub.name != 'VEVENT':
             continue
         dtstart = sub['DTSTART'].dt
+        date = dtstart.date() if isinstance(dtstart, datetime.datetime) else dtstart
+        time_from = dtstart.strftime('%H:%M') if isinstance(dtstart, datetime.datetime) else ''
         program_list.append(
             {
-                'date': dtstart.date().strftime('%Y-%m-%d') if isinstance(dtstart, datetime.datetime) else dtstart.strftime('%Y-%m-%d'),
-                'time_from': dtstart.strftime('%H:%M') if isinstance(dtstart, datetime.datetime) else '',
+                'date': date.strftime('%Y-%m-%d'),
+                'time_from': time_from.replace('00:00', ''),
                 'time_to': '',
                 'subject': sub['SUMMARY'],
                 'url': '',
-                'room_name': '長野市芸術館 ' + sub['LOCATION'],
+                'room_name': '長野市芸術館 ' + _parse_location(sub['LOCATION']),
             }
         )
     return program_list
 
+
+def _parse_location(loc):
+    if loc == 'mainhall':
+        return 'メインホール'
+    if loc == 'actspace':
+        return 'アクトスペース'
+    if loc == 'recitalhall':
+        return 'リサイタルホール'
+    return ''
 
 def _parse_program_mesena(program_list, url):
     d = pq(url)
