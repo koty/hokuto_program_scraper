@@ -26,8 +26,8 @@ def _nagano_art(program_list):
         dtstart = sub['DTSTART'].dt
         program_list.append(
             {
-                'date': dtstart.strftime('%Y-%m-%d') if isinstance(dtstart, datetime.date) else dtstart.date().strftime('%Y-%m-%d'),
-                'time_from': '' if isinstance(dtstart, datetime.date) else dtstart.strftime('%H:%M'),
+                'date': dtstart.date().strftime('%Y-%m-%d') if isinstance(dtstart, datetime.datetime) else dtstart.strftime('%Y-%m-%d'),
+                'time_from': dtstart.strftime('%H:%M') if isinstance(dtstart, datetime.datetime) else '',
                 'time_to': '',
                 'subject': sub['SUMMARY'],
                 'url': '',
