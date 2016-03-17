@@ -3,7 +3,9 @@ import json
 import unicodedata
 from flask import Flask, jsonify, Response, request
 from dateutil.parser import parse
+from icalendar import Calendar
 from pyquery import PyQuery as pq
+import http.client
 
 app = Flask(__name__)
 
@@ -11,6 +13,28 @@ app = Flask(__name__)
 @app.route('/')
 def hello_world():
     return 'Hello World!'
+
+
+def _nagano_art(program_list):
+    conn = http.client.HTTPSConnection("www.nagano-arts.or.jp")
+    conn.request("GET", "/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&xml=true")
+    res = conn.getresponse()
+    gcal = Calendar.from_ical(res.read())
+    for sub in gcal.subcomponents:
+        if sub.name != 'VEVENT':
+            continue
+        dtstart = sub['DTSTART'].dt
+        program_list.append(
+            {
+                'date': dtstart.strftime('%Y-%m-%d') if isinstance(dtstart, datetime.date) else dtstart.date().strftime('%Y-%m-%d'),
+                'time_from': '' if isinstance(dtstart, datetime.date) else dtstart.strftime('%H:%M'),
+                'time_to': '',
+                'subject': sub['SUMMARY'],
+                'url': '',
+                'room_name': '長野市芸術館 ' + sub['LOCATION'],
+            }
+        )
+    return program_list
 
 
 def _parse_program_mesena(program_list, url):
@@ -181,6 +205,21 @@ def _parse_program_hokuto(url, program_list, room_name):
     return program_list
 
 
+@app.route('/nagano_art.json')
+def get_program_nagano_art():
+    program_list = []
+    try:
+        program_list = _nagano_art(program_list)
+    except Exception as e:
+        print(e)
+        raise
+    data = {'results': program_list}
+    callback = request.args.get("callback")
+    if callback:
+        return jsonp(data, callback)
+    return jsonify(data)
+
+
 @app.route('/mesena.json')
 def get_program_mesena():
     program_list = []
@@ -220,6 +259,7 @@ def get_program_chikuma():
 def get_program_hokuto():
     program_list = []
     try:
+        program_list = _nagano_art(program_list)
         program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/', program_list, 'ホクト文化ホール 大')
         program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/?page=2', program_list, 'ホクト文化ホール 大')
         program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/', program_list, 'ホクト文化ホール 中')
