@@ -137,7 +137,7 @@ def _parse_program_chikuma(program_list):
             time_from = tr.getchildren()[4 - offset].getchildren()[0].text.replace(u'：', ':')
             time_to = ''
             subject = tr.getchildren()[3 - offset].getchildren()[0].text
-            room_name = u'更植文化会館' \
+            room_name = u'更埴文化会館' \
                 if _get_hall_name_image_tag(tr.getchildren()[3 - offset]).attrib['src'] == 'image33.gif'\
                 else u'上山田文化会館'
             program_list.append(
