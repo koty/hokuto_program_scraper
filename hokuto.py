@@ -298,7 +298,8 @@ def get_program_hokuto_proxy():
     conn.request("GET", "/f7590088-74d7-418f-9f82-2fae8f371f63/hokuto.json")
     res = conn.getresponse()
     json = res.read()
-    return json
+    return Response("%s(%s);" % (request.args.get("callback"), json),
+                    mimetype="text/javascript")
 
 
 def jsonp(data, callback="function"):
@@ -308,8 +309,8 @@ def jsonp(data, callback="function"):
     :param callback:
     :return:
     """
-    return Response("%s(%s);" % (callback, json.dumps(data))
-                    , mimetype="text/javascript")
+    return Response("%s(%s);" % (callback, json.dumps(data)),
+                    mimetype="text/javascript")
 
 
 if __name__ == '__main__':
