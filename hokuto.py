@@ -297,7 +297,7 @@ def get_program_hokuto_proxy():
     conn = http.client.HTTPSConnection("s3-us-west-2.amazonaws.com")
     conn.request("GET", "/f7590088-74d7-418f-9f82-2fae8f371f63/hokuto.json")
     res = conn.getresponse()
-    json = res.read()
+    json = res.read().decode('utf-8')
     return Response("%s(%s);" % (request.args.get("callback"), json),
                     mimetype="text/javascript")
 
