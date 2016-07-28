@@ -1,8 +1,8 @@
 from __future__ import print_function
-import hokuto
+import hokuto_27
 
 def lambda_handler(event, context):
-    ret = hokuto.get_program_hokuto()
+    ret = hokuto_27.get_program_hokuto()
     with open('/tmp/hokuto.json', 'w') as f:
         f.write(ret) #
     #print(ret)
@@ -11,8 +11,8 @@ def lambda_handler(event, context):
     s3client = boto3.client('s3')
     transfer = S3Transfer(s3client)
     transfer.upload_file('/tmp/hokuto.json',
-                         'f7590088-74d7-418f-9f82-2fae8f371f63',
-                         'hokuto.json',
+                         'b-sw.co',
+                         'hokuto/hokuto.json',
                          extra_args={'ContentType': "application/json", 'ACL': 'public-read'})
 
 if __name__ == '__main__':
