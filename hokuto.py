@@ -1,4 +1,3 @@
-# coding=utf-8
 import datetime
 import json
 import unicodedata
@@ -25,7 +24,7 @@ def _nagano_art(program_list):
                 'time_to': '',
                 'subject': sub['SUMMARY'],
                 'url': '',
-                'room_name': u'長野市芸術館 ' + _parse_location(sub['LOCATION']),
+                'room_name': '長野市芸術館 ' + _parse_location(sub['LOCATION']),
             }
         )
     return program_list
@@ -33,17 +32,17 @@ def _nagano_art(program_list):
 
 def _parse_location(loc):
     if loc == 'mainhall':
-        return u'メインホール'
+        return 'メインホール'
     if loc == 'actspace':
-        return u'アクトスペース'
+        return 'アクトスペース'
     if loc == 'recitalhall':
-        return u'リサイタルホール'
+        return 'リサイタルホール'
     return ''
 
 def _parse_program_mesena(program_list, url):
     d = pq(url)
     year_month_text = unicodedata.normalize('NFKC', d('#schedule h3')[0].text)\
-        .replace(' ', '').replace(u'年', '').replace(u'月', '')
+        .replace(' ', '').replace('年', '').replace('月', '')
     year = int(year_month_text[0:4])
     month = int(year_month_text[4:])
     trs = d('#schedule tr')
@@ -66,7 +65,7 @@ def _parse_program_mesena(program_list, url):
                         'time_to': '',
                         'subject': tr.getchildren()[2].text,
                         'url': url,
-                        'room_name': u'メセナホール',
+                        'room_name': 'メセナホール',
                     }
                 )
                 row_span -= 1
@@ -87,12 +86,12 @@ def _parse_program_mesena(program_list, url):
             row_span = 0
             continue
         row_span -= 1
-        time_from = tr.getchildren()[4 - off_set].text.replace(u'：', ':')
+        time_from = tr.getchildren()[4 - off_set].text.replace('：', ':')
         time_to = ''
         subject = tr.getchildren()[3 - off_set].text
         if not subject:
             subject = tr.getchildren()[3 - off_set].getchildren()[0].text
-        room_name = u'メセナホール' + tr.getchildren()[2 - off_set].text
+        room_name = 'メセナホール' + tr.getchildren()[2 - off_set].text
         program_list.append(
             {
                 'date': date,
@@ -108,14 +107,14 @@ def _parse_program_mesena(program_list, url):
 
 def _parse_program_chikuma(program_list):
     d = pq('http://www.chikuma-bunka.jp/moyoshi.html')
-    prog_by_months = d(u'table :contains("催しもの名・会場")')
+    prog_by_months = d('table :contains("催しもの名・会場")')
     if not prog_by_months:
         return program_list
     for i, prog in enumerate(prog_by_months):
         table = prog.getparent().getparent().getparent()
         row_span = 0
         for tr in table.getchildren():
-            if tr.getchildren()[1].getchildren()[0].text == u'日':
+            if tr.getchildren()[1].getchildren()[0].text == '日':
                 continue
             if tr.getchildren()[1].attrib.get('rowspan'):
                 row_span = int(tr.getchildren()[1].attrib.get('rowspan'))
@@ -126,12 +125,12 @@ def _parse_program_chikuma(program_list):
                 date = _get_chikuma_date(d, tr.getchildren()[1].getchildren()[0].text, i).strftime("%Y-%m-%d")
                 offset = 0
             row_span -= 1
-            time_from = tr.getchildren()[4 - offset].getchildren()[0].text.replace(u'：', ':')
+            time_from = tr.getchildren()[4 - offset].getchildren()[0].text.replace('：', ':')
             time_to = ''
             subject = tr.getchildren()[3 - offset].getchildren()[0].text
-            room_name = u'更植文化会館' \
+            room_name = '更植文化会館' \
                 if _get_hall_name_image_tag(tr.getchildren()[3 - offset]).attrib['src'] == 'image33.gif'\
-                else u'上山田文化会館'
+                else '上山田文化会館'
             program_list.append(
                 {
                     'date': date,
@@ -164,7 +163,7 @@ def _get_chikuma_date(d, day_text, i):
     :return:
     """
     # 〜と～は見た目同じだけど違う文字らしい
-    day_text = day_text.replace(u'日', '').replace('〜', '').replace('～', '')
+    day_text = day_text.replace('日', '').replace('〜', '').replace('～', '')
     pdf_anchors = [a for a in d('a') if a.attrib.get('href') and a.attrib['href'].endswith('o.pdf')]
     # 27-5-6o.pdf
     ymd_list = pdf_anchors[0].attrib['href'].replace('o.pdf', '').split('-')
@@ -175,7 +174,7 @@ def _get_chikuma_date(d, day_text, i):
 
 
 def _parse_program_hokuto(url, program_list, room_name):
-    d = pq(url)
+    d = pq(url=url, encoding='utf-8')
     if not d('#tbl_list tr').children():
         return program_list
     for tr in d('#tbl_list tr'):
@@ -259,12 +258,12 @@ def get_program_hokuto():
     program_list = []
     try:
         program_list = _nagano_art(program_list)
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/', program_list, u'ホクト文化ホール 大')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/?page=2', program_list, u'ホクト文化ホール 大')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/', program_list, u'ホクト文化ホール 中')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/?page=2', program_list, u'ホクト文化ホール 中')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/', program_list, u'ホクト文化ホール 小')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, u'ホクト文化ホール 小')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/', program_list, 'ホクト文化ホール 大')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/?page=2', program_list, 'ホクト文化ホール 大')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/', program_list, 'ホクト文化ホール 中')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/?page=2', program_list, 'ホクト文化ホール 中')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/', program_list, 'ホクト文化ホール 小')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, 'ホクト文化ホール 小')
         program_list = _parse_program_mesena(program_list,
                                              'http://www.culture-suzaka.or.jp/mesena/schedule/index.html')
         program_list = _parse_program_mesena(program_list,
