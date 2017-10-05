@@ -1,11 +1,10 @@
-from __future__ import print_function
-import hokuto_27
+import hokuto
+
 
 def lambda_handler(event, context):
-    ret = hokuto_27.get_program_hokuto()
+    ret = hokuto.get_program_hokuto()
     with open('/tmp/hokuto.json', 'w') as f:
         f.write(ret) #
-    #print(ret)
     import boto3
     from boto3.s3.transfer import S3Transfer
     s3client = boto3.client('s3')
@@ -17,4 +16,3 @@ def lambda_handler(event, context):
 
 if __name__ == '__main__':
     lambda_handler(None, None)
-

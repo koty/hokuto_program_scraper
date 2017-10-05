@@ -1,25 +1,17 @@
+# coding=utf-8
 import datetime
 import json
 import unicodedata
-from flask import Flask, jsonify, Response, request
 from dateutil.parser import parse
 from icalendar import Calendar
 from pyquery import PyQuery as pq
-import http.client
-
-app = Flask(__name__)
-
-
-@app.route('/')
-def hello_world():
-    return 'Hello World!'
+import requests
 
 
 def _nagano_art(program_list):
-    conn = http.client.HTTPSConnection("www.nagano-arts.or.jp")
-    conn.request("GET", "/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&xml=true")
-    res = conn.getresponse()
-    gcal = Calendar.from_ical(res.read())
+    res = requests.get('https://www.nagano-arts.or.jp/?plugin=all-in-one-event-calendar&controller=ai1ec_exporter_controller&action=export_events&xml=true')
+
+    gcal = Calendar.from_ical(res.text)
     for sub in gcal.subcomponents:
         if sub.name != 'VEVENT':
             continue
@@ -33,7 +25,7 @@ def _nagano_art(program_list):
                 'time_to': '',
                 'subject': sub['SUMMARY'],
                 'url': '',
-                'room_name': '長野市芸術館 ' + _parse_location(sub['LOCATION']),
+                'room_name': u'長野市芸術館 ' + _parse_location(sub['LOCATION']),
             }
         )
     return program_list
@@ -41,17 +33,17 @@ def _nagano_art(program_list):
 
 def _parse_location(loc):
     if loc == 'mainhall':
-        return 'メインホール'
+        return u'メインホール'
     if loc == 'actspace':
-        return 'アクトスペース'
+        return u'アクトスペース'
     if loc == 'recitalhall':
-        return 'リサイタルホール'
+        return u'リサイタルホール'
     return ''
 
 def _parse_program_mesena(program_list, url):
     d = pq(url)
     year_month_text = unicodedata.normalize('NFKC', d('#schedule h3')[0].text)\
-        .replace(' ', '').replace('年', '').replace('月', '')
+        .replace(' ', '').replace(u'年', '').replace(u'月', '')
     year = int(year_month_text[0:4])
     month = int(year_month_text[4:])
     trs = d('#schedule tr')
@@ -74,7 +66,7 @@ def _parse_program_mesena(program_list, url):
                         'time_to': '',
                         'subject': tr.getchildren()[2].text,
                         'url': url,
-                        'room_name': 'メセナホール',
+                        'room_name': u'メセナホール',
                     }
                 )
                 row_span -= 1
@@ -137,7 +129,7 @@ def _parse_program_chikuma(program_list):
             time_from = tr.getchildren()[4 - offset].getchildren()[0].text.replace(u'：', ':')
             time_to = ''
             subject = tr.getchildren()[3 - offset].getchildren()[0].text
-            room_name = u'更埴文化会館' \
+            room_name = u'更植文化会館' \
                 if _get_hall_name_image_tag(tr.getchildren()[3 - offset]).attrib['src'] == 'image33.gif'\
                 else u'上山田文化会館'
             program_list.append(
@@ -172,7 +164,7 @@ def _get_chikuma_date(d, day_text, i):
     :return:
     """
     # 〜と～は見た目同じだけど違う文字らしい
-    day_text = day_text.replace('日', '').replace('〜', '').replace('～', '')
+    day_text = day_text.replace(u'日', '').replace('〜', '').replace('～', '')
     pdf_anchors = [a for a in d('a') if a.attrib.get('href') and a.attrib['href'].endswith('o.pdf')]
     # 27-5-6o.pdf
     ymd_list = pdf_anchors[0].attrib['href'].replace('o.pdf', '').split('-')
@@ -216,7 +208,6 @@ def _parse_program_hokuto(url, program_list, room_name):
     return program_list
 
 
-@app.route('/nagano_art.json')
 def get_program_nagano_art():
     program_list = []
     try:
@@ -225,13 +216,12 @@ def get_program_nagano_art():
         print(e)
         raise
     data = {'results': program_list}
-    callback = request.args.get("callback")
-    if callback:
-        return jsonp(data, callback)
-    return jsonify(data)
+    #callback = request.args.get("callback")
+    #if callback:
+    #    return jsonp(data)
+    return json.dumps(data)
 
 
-@app.route('/mesena.json')
 def get_program_mesena():
     program_list = []
     try:
@@ -244,13 +234,12 @@ def get_program_mesena():
         raise
 
     data = {'results': program_list}
-    callback = request.args.get("callback")
-    if callback:
-        return jsonp(data, callback)
-    return jsonify(data)
+    #callback = request.args.get("callback")
+    #if callback:
+    #    return jsonp(data)
+    return json.dumps(data)
 
 
-@app.route('/chikuma.json')
 def get_program_chikuma():
     program_list = []
     try:
@@ -260,23 +249,22 @@ def get_program_chikuma():
         raise
 
     data = {'results': program_list}
-    callback = request.args.get("callback")
-    if callback:
-        return jsonp(data, callback)
-    return jsonify(data)
+    #callback = request.args.get("callback")
+    #if callback:
+    #    return jsonp(data)
+    return json.dumps(data)
 
 
-@app.route('/hokuto.json')
 def get_program_hokuto():
     program_list = []
     try:
         program_list = _nagano_art(program_list)
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/', program_list, 'ホクト文化ホール 大')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/?page=2', program_list, 'ホクト文化ホール 大')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/', program_list, 'ホクト文化ホール 中')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/?page=2', program_list, 'ホクト文化ホール 中')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/', program_list, 'ホクト文化ホール 小')
-        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, 'ホクト文化ホール 小')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/', program_list, u'ホクト文化ホール 大')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat66/?page=2', program_list, u'ホクト文化ホール 大')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/', program_list, u'ホクト文化ホール 中')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat67/?page=2', program_list, u'ホクト文化ホール 中')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/', program_list, u'ホクト文化ホール 小')
+        program_list = _parse_program_hokuto('http://www.n-bunka.jp/schedule/cat68/?page=2', program_list, u'ホクト文化ホール 小')
         program_list = _parse_program_mesena(program_list,
                                              'http://www.culture-suzaka.or.jp/mesena/schedule/index.html')
         program_list = _parse_program_mesena(program_list,
@@ -286,20 +274,10 @@ def get_program_hokuto():
         print(e)
 
     data = {'results': program_list}
-    callback = request.args.get("callback")
-    if callback:
-        return jsonp(data, callback)
-    return jsonify(data)
-
-
-@app.route('/hokuto_proxy.json')
-def get_program_hokuto_proxy():
-    conn = http.client.HTTPSConnection("s3-us-west-2.amazonaws.com")
-    conn.request("GET", "/f7590088-74d7-418f-9f82-2fae8f371f63/hokuto.json")
-    res = conn.getresponse()
-    json = res.read().decode('utf-8')
-    return Response("%s(%s);" % (request.args.get("callback"), json),
-                    mimetype="text/javascript")
+    #callback = request.args.get("callback")
+    #if callback:
+    #    return jsonp(data)
+    return json.dumps(data)
 
 
 def jsonp(data, callback="function"):
@@ -309,9 +287,6 @@ def jsonp(data, callback="function"):
     :param callback:
     :return:
     """
-    return Response("%s(%s);" % (callback, json.dumps(data)),
-                    mimetype="text/javascript")
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    #return Response("%s(%s);" % (callback, json.dumps(data))
+    #                , mimetype="text/javascript")
+    return json.dumps(data)
