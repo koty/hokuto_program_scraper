@@ -55,3 +55,4 @@ initial_data.py
 .serverless
 node_modules
 .idea
+.requirements
